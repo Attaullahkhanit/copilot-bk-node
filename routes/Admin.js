@@ -4,45 +4,40 @@ const alcohlicPerfume = require('../models/alcohlicPerfume')
 const user_content = require('../models/user_content')
 const Accounts = require('../models/Accounts')
 const RegisterUsers = require('../models/Registeration')
-const uploadImg = require('../src/uploader')
+const uploadImg = require('../src/uploader') 
 const path = require('path')
 const axios = require('axios');
-
+const { Configuration, OpenAIApi } = require("openai");
  
+  
 
 
 // all none alcohlic perfume
-router.get('/call-chatgpt-api', async (req, res) => {
+router.post('/call-chatgpt-api', async (req, res) => { 
+ console.log(req.body.prompt, 'req')
+const configuration = new Configuration({ apiKey: "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" });
+const openai = new OpenAIApi(configuration); 
   
-   const API_KEY = "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";
-  const systemMessage = {
-    "role": "system",
-    "content": ""
-  };
+const prompt = req.body.prompt;
 
-  const apiRequestBody = {
-    "model": "gpt-3.5-turbo",
-    "messages": [
-      systemMessage,
-      { role: "user", content: req.body.prompt } // Assuming you pass the 'prompt' in the request body
-    ]
-  };
+  const messages = [
+    { role: 'system', content: 'You: ' + prompt },
+    { role: 'user', content: prompt }
+  ];
 
   try {
-    const response = await axios.post("https://api.openai.com/v1/chat/completions", apiRequestBody, {
-      headers: {
-        "Authorization": "Bearer " + API_KEY,
-        "Content-Type": "application/json"
-      }
+    const response = await openai.createChatCompletion({
+      messages,
+      model: 'gpt-3.5-turbo',
     });
 
+    const botMessage = response.data.choices[0].message.content;
 
-    const data = await response.json(); 
-    res.status(200).json({result:data, message: err.message })
+    res.json({ botMessage });
   } catch (error) {
-    console.error("Error calling the OpenAI API:", error);
-    res.status(500).json({ error: "An error occurred while calling the OpenAI API." });
-  } 
+    console.error('Error:', error.message);
+    res.status(500).json({ error: 'An error occurred while calling the OpenAI API.' });
+  }
 })
 
 
